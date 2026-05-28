@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sculk Hosting Control Panel</title>
+    <!-- Outfit Font for layout, JetBrains Mono for console/editor -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i data-lucide="shield-alert" class="brand-icon"></i>
+                <span class="brand-text">Sculk <span class="accent-text">Hosting</span></span>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="overview">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="nav-item" data-tab="console">
+                    <i data-lucide="terminal"></i>
+                    <span>Console</span>
+                </button>
+                <button class="nav-item" data-tab="files">
+                    <i data-lucide="folder-open"></i>
+                    <span>File Manager</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-indicator-container">
+                    <span class="status-dot stopped" id="sidebar-status-dot"></span>
+                    <span id="sidebar-status-text">OFFLINE</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <header class="main-header">
+                <div class="header-title">
+                    <h1 id="page-title">Dashboard Overview</h1>
+                    <p class="subtitle" id="page-subtitle">Monitor and control your remote Minecraft server.</p>
+                </div>
+                <div class="header-actions">
+                    <div class="tunnel-badge" id="tunnel-badge-container">
+                        <i data-lucide="globe"></i>
+                        <span id="tunnel-link" class="tunnel-url-text">Exposing...</span>
+                        <button class="copy-btn" id="copy-tunnel-btn" title="Copy Tunnel URL">
+                            <i data-lucide="copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB CONTENT: OVERVIEW -->
+            <section class="tab-content active" id="tab-overview">
+                <!-- Status & Action Card -->
+                <div class="card status-card">
+                    <div class="status-card-header">
+                        <div class="status-meta">
+                            <span class="status-badge stopped" id="overview-status-badge">STOPPED</span>
+                        </div>
+                        <div class="control-buttons">
+                            <button class="btn btn-success" id="start-btn">
+                                <i data-lucide="play"></i> Start Server
+                            </button>
+                            <button class="btn btn-danger" id="stop-btn" disabled>
+                                <i data-lucide="square"></i> Stop
+                            </button>
+                            <button class="btn btn-warning" id="restart-btn" disabled>
+                                <i data-lucide="refresh-cw"></i> Restart
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Jars Prompt if server.jar missing -->
+                    <div class="missing-jar-warning hidden" id="missing-jar-alert">
+                        <i data-lucide="alert-triangle"></i>
+                        <div class="warning-text">
+                            <h3>No Server Jar Found!</h3>
+                            <p>To run the Minecraft server, please go to the <strong>File Manager</strong> tab or use the button below to upload your server executable (it will be automatically renamed to <code>server.jar</code>).</p>
+                        </div>
+                        <button class="btn btn-primary" id="trigger-jar-upload">
+                            <i data-lucide="upload-cloud"></i> Upload Server Jar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <span>Minecraft Server CPU</span>
+                            <i data-lucide="cpu" class="metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="mc-cpu-value">0.0%</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="mc-cpu-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <span>Minecraft Server RAM</span>
+                            <i data-lucide="hard-drive" class="metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="mc-ram-value">0 MB</div>
+                    </div>
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <span>Host Machine CPU</span>
+                            <i data-lucide="pie-chart" class="metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="host-cpu-value">0%</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="host-cpu-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <span>Host Machine RAM</span>
+                            <i data-lucide="activity" class="metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="host-ram-value">0%</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="host-ram-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Settings / RAM Slider -->
+                <div class="card settings-card">
+                    <div class="card-title-container">
+                        <i data-lucide="sliders"></i>
+                        <h2>Java Virtual Machine Settings</h2>
+                    </div>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>Minimum RAM allocation (-Xms)</label>
+                            <div class="ram-input-wrapper">
+                                <input type="range" min="1" max="16" value="1" class="slider" id="min-ram-slider">
+                                <input type="text" id="min-ram-text" class="form-control text-input-ram" value="1G">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Maximum RAM allocation (-Xmx)</label>
+                            <div class="ram-input-wrapper">
+                                <input type="range" min="1" max="16" value="4" class="slider" id="max-ram-slider">
+                                <input type="text" id="max-ram-text" class="form-control text-input-ram" value="4G">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="save-config-btn">
+                            <i data-lucide="save"></i> Save JVM Settings
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB CONTENT: CONSOLE -->
+            <section class="tab-content" id="tab-console">
+                <div class="card console-card">
+                    <div class="console-output" id="console-output">
+                        <div class="system-log">[Sculk Panel] Connecting console socket...</div>
+                    </div>
+                    <div class="console-input-container">
+                        <span class="prompt-symbol">&gt;</span>
+                        <input type="text" id="console-input" placeholder="Type a server command (e.g. op username, say Hello)..." disabled>
+                        <button class="btn btn-primary" id="send-cmd-btn" disabled>
+                            <i data-lucide="send"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB CONTENT: FILES -->
+            <section class="tab-content" id="tab-files">
+                <div class="card file-manager-card">
+                    <div class="file-manager-header">
+                        <!-- Breadcrumbs -->
+                        <div class="breadcrumbs" id="file-breadcrumbs">
+                            <span class="breadcrumb-item" data-path="">root</span>
+                        </div>
+                        <!-- File Controls -->
+                        <div class="file-controls">
+                            <button class="btn btn-secondary btn-sm" id="new-folder-btn">
+                                <i data-lucide="folder-plus"></i> New Folder
+                            </button>
+                            <label class="btn btn-primary btn-sm" id="upload-label" style="cursor: pointer;">
+                                <i data-lucide="upload-cloud"></i> Upload Files
+                                <input type="file" id="file-upload-input" multiple style="display:none;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- File list table -->
+                    <div class="file-table-container">
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Size</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="file-list-tbody">
+                                <!-- Dynamic File Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: TEXT EDITOR -->
+    <div class="modal" id="editor-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="editor-title">Editing File</h3>
+                <button class="close-btn" id="close-editor-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="editor-textarea" spellcheck="false"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-edit-btn">Cancel</button>
+                <button class="btn btn-success" id="save-edit-btn">
+                    <i data-lucide="save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NEW FOLDER -->
+    <div class="modal" id="folder-modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Create New Folder</h3>
+                <button class="close-btn" id="close-folder-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-folder-name" class="form-control" placeholder="Folder Name">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-folder-btn">Cancel</button>
+                <button class="btn btn-success" id="confirm-folder-btn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden native file input for jar prompt -->
+    <input type="file" id="jar-upload-native" accept=".jar" style="display:none;">
+
+    <script src="app.js"></script>
+</body>
+</html>
