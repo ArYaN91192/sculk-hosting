@@ -119,63 +119,66 @@ async function refreshStatus() {
         const dlPercent = document.getElementById('download-modal-percentage');
         const dlCloseBtn = document.getElementById('download-modal-close-btn');
         
-        if (data.download && data.download.status !== 'idle') {
-            dlModal.classList.add('open');
-            
-            let iconName = 'download-cloud';
-            let iconClass = 'download-card-icon';
-            
-            if (data.download.status === 'fetching') {
-                dlTitle.textContent = 'Preparing Server Jar...';
-                dlStatus.textContent = 'Querying PaperMC API for build details...';
-                dlBar.style.width = '10%';
-                dlPercent.textContent = '10%';
-                iconName = 'download-cloud';
-                iconClass = 'download-card-icon';
-                dlCloseBtn.classList.add('hidden');
-                appState.downloadCompleteTriggered = false;
-            } else if (data.download.status === 'downloading') {
-                dlTitle.textContent = 'Downloading Paper 1.21.1...';
-                dlStatus.textContent = 'Downloading server executable...';
-                dlBar.style.width = `${data.download.progress}%`;
-                dlPercent.textContent = `${data.download.progress}%`;
-                iconName = 'download-cloud';
-                iconClass = 'download-card-icon';
-                dlCloseBtn.classList.add('hidden');
-                appState.downloadCompleteTriggered = false;
-            } else if (data.download.status === 'complete') {
-                dlTitle.textContent = 'Ready!';
-                dlStatus.textContent = 'Paper 1.21.1 installed successfully. Starting server...';
-                dlBar.style.width = '100%';
-                dlPercent.textContent = '100%';
-                iconName = 'check-circle-2';
-                iconClass = 'download-card-icon success';
-                dlCloseBtn.classList.add('hidden');
+        if (!appState.isClearingDownload) {
+            if (data.download && data.download.status !== 'idle') {
+                dlModal.classList.add('open');
                 
-                if (!appState.downloadCompleteTriggered) {
-                    appState.downloadCompleteTriggered = true;
-                    setTimeout(async () => {
-                        dlModal.classList.remove('open');
-                        await fetch('/api/download/clear', { method: 'POST' });
-                        refreshStatus();
-                    }, 3000);
+                let iconName = 'download-cloud';
+                let iconClass = 'download-card-icon';
+                
+                if (data.download.status === 'fetching') {
+                    dlTitle.textContent = 'Preparing Server Jar...';
+                    dlStatus.textContent = 'Querying PaperMC API for build details...';
+                    dlBar.style.width = '10%';
+                    dlPercent.textContent = '10%';
+                    iconName = 'download-cloud';
+                    iconClass = 'download-card-icon';
+                    dlCloseBtn.classList.add('hidden');
+                    appState.downloadCompleteTriggered = false;
+                } else if (data.download.status === 'downloading') {
+                    dlTitle.textContent = 'Downloading Paper 1.21.1...';
+                    dlStatus.textContent = 'Downloading server executable...';
+                    dlBar.style.width = `${data.download.progress}%`;
+                    dlPercent.textContent = `${data.download.progress}%`;
+                    iconName = 'download-cloud';
+                    iconClass = 'download-card-icon';
+                    dlCloseBtn.classList.add('hidden');
+                    appState.downloadCompleteTriggered = false;
+                } else if (data.download.status === 'complete') {
+                    dlTitle.textContent = 'Ready!';
+                    dlStatus.textContent = 'Paper 1.21.1 installed successfully. Starting server...';
+                    dlBar.style.width = '100%';
+                    dlPercent.textContent = '100%';
+                    iconName = 'check-circle-2';
+                    iconClass = 'download-card-icon success';
+                    dlCloseBtn.classList.add('hidden');
+                    
+                    if (!appState.downloadCompleteTriggered) {
+                        appState.downloadCompleteTriggered = true;
+                        appState.isClearingDownload = true;
+                        setTimeout(async () => {
+                            dlModal.classList.remove('open');
+                            await fetch('/api/download/clear', { method: 'POST' });
+                            appState.downloadCompleteTriggered = false;
+                            appState.isClearingDownload = false;
+                            refreshStatus();
+                        }, 3000);
+                    }
+                } else if (data.download.status === 'failed') {
+                    dlTitle.textContent = 'Installation Failed';
+                    dlStatus.textContent = `Error: ${data.download.error}`;
+                    dlBar.style.width = '0%';
+                    dlPercent.textContent = '0%';
+                    iconName = 'alert-triangle';
+                    iconClass = 'download-card-icon error';
+                    dlCloseBtn.classList.remove('hidden');
                 }
-            } else if (data.download.status === 'failed') {
-                dlTitle.textContent = 'Installation Failed';
-                dlStatus.textContent = `Error: ${data.download.error}`;
-                dlBar.style.width = '0%';
-                dlPercent.textContent = '0%';
-                iconName = 'alert-triangle';
-                iconClass = 'download-card-icon error';
-                dlCloseBtn.classList.remove('hidden');
-            }
-            
-            if (dlIconContainer) {
-                dlIconContainer.innerHTML = `<i data-lucide="${iconName}" class="${iconClass}"></i>`;
-            }
-            lucide.createIcons();
-        } else {
-            if (!appState.downloadCompleteTriggered) {
+                
+                if (dlIconContainer) {
+                    dlIconContainer.innerHTML = `<i data-lucide="${iconName}" class="${iconClass}"></i>`;
+                }
+                lucide.createIcons();
+            } else {
                 dlModal.classList.remove('open');
             }
         }
