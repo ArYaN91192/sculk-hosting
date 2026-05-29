@@ -905,6 +905,16 @@ button:disabled {
 
 .download-card-icon {
     color: var(--accent);
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+}
+
+.download-card-icon.success {
+    color: var(--success) !important;
+}
+
+.download-card-icon.error {
+    color: var(--danger) !important;
 }
 
 .download-card-icon.spin {

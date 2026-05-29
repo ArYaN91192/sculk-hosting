@@ -145,7 +145,7 @@ async function refreshStatus() {
                 dlStatus.textContent = 'Paper 1.21.1 installed successfully. Starting server...';
                 dlBar.style.width = '100%';
                 dlPercent.textContent = '100%';
-                dlIcon.className = 'download-card-icon';
+                dlIcon.className = 'download-card-icon success';
                 dlIcon.setAttribute('data-lucide', 'check-circle-2');
                 dlCloseBtn.classList.add('hidden');
                 
@@ -162,7 +162,7 @@ async function refreshStatus() {
                 dlStatus.textContent = `Error: ${data.download.error}`;
                 dlBar.style.width = '0%';
                 dlPercent.textContent = '0%';
-                dlIcon.className = 'download-card-icon';
+                dlIcon.className = 'download-card-icon error';
                 dlIcon.setAttribute('data-lucide', 'alert-triangle');
                 dlCloseBtn.classList.remove('hidden');
             }
