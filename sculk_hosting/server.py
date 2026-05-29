@@ -265,6 +265,13 @@ async def get_status():
         }
     }
 
+@app.post("/api/download/clear")
+async def clear_download():
+    state.download_status = "idle"
+    state.download_progress = 0
+    state.download_error = ""
+    return {"message": "Download state cleared"}
+
 class ConfigModel(BaseModel):
     min_ram: str
     max_ram: str

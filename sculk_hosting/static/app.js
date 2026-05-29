@@ -110,47 +110,67 @@ async function refreshStatus() {
             missingAlert.classList.add('hidden');
         }
         
-        // Update Download Progress Card
-        const dlCard = document.getElementById('download-progress-card');
-        const dlTitle = document.getElementById('download-title');
-        const dlStatus = document.getElementById('download-status-text');
-        const dlBar = document.getElementById('download-progress-bar');
-        const dlIcon = document.getElementById('download-icon');
+        // Update Download Progress Modal
+        const dlModal = document.getElementById('download-modal');
+        const dlTitle = document.getElementById('download-modal-title');
+        const dlStatus = document.getElementById('download-modal-status-text');
+        const dlBar = document.getElementById('download-modal-progress-bar');
+        const dlIcon = document.getElementById('download-modal-icon');
+        const dlPercent = document.getElementById('download-modal-percentage');
+        const dlCloseBtn = document.getElementById('download-modal-close-btn');
         
         if (data.download && data.download.status !== 'idle') {
-            dlCard.classList.remove('hidden');
+            dlModal.classList.add('open');
             
             if (data.download.status === 'fetching') {
                 dlTitle.textContent = 'Preparing Server Jar...';
-                dlStatus.textContent = 'Querying PaperMC API for latest build details...';
+                dlStatus.textContent = 'Querying PaperMC API for build details...';
                 dlBar.style.width = '10%';
-                dlIcon.classList.add('spin');
-                dlCard.style.borderLeftColor = 'var(--accent)';
+                dlPercent.textContent = '10%';
+                dlIcon.className = 'download-card-icon spin';
+                dlIcon.setAttribute('data-lucide', 'download-cloud');
+                dlCloseBtn.classList.add('hidden');
+                appState.downloadCompleteTriggered = false;
             } else if (data.download.status === 'downloading') {
                 dlTitle.textContent = 'Downloading Paper 1.21.1...';
-                dlStatus.textContent = `Downloading server executable: ${data.download.progress}%`;
+                dlStatus.textContent = 'Downloading server executable...';
                 dlBar.style.width = `${data.download.progress}%`;
-                dlIcon.classList.add('spin');
-                dlCard.style.borderLeftColor = 'var(--accent)';
+                dlPercent.textContent = `${data.download.progress}%`;
+                dlIcon.className = 'download-card-icon spin';
+                dlIcon.setAttribute('data-lucide', 'download-cloud');
+                dlCloseBtn.classList.add('hidden');
+                appState.downloadCompleteTriggered = false;
             } else if (data.download.status === 'complete') {
-                dlTitle.textContent = 'Download Complete!';
-                dlStatus.textContent = 'The server jar has been downloaded successfully. Starting server...';
+                dlTitle.textContent = 'Ready!';
+                dlStatus.textContent = 'Paper 1.21.1 installed successfully. Starting server...';
                 dlBar.style.width = '100%';
-                dlIcon.classList.remove('spin');
-                dlCard.style.borderLeftColor = 'var(--success)';
-                // Hide after 4 seconds
-                setTimeout(() => {
-                    dlCard.classList.add('hidden');
-                }, 4000);
+                dlPercent.textContent = '100%';
+                dlIcon.className = 'download-card-icon';
+                dlIcon.setAttribute('data-lucide', 'check-circle-2');
+                dlCloseBtn.classList.add('hidden');
+                
+                if (!appState.downloadCompleteTriggered) {
+                    appState.downloadCompleteTriggered = true;
+                    setTimeout(async () => {
+                        dlModal.classList.remove('open');
+                        await fetch('/api/download/clear', { method: 'POST' });
+                        refreshStatus();
+                    }, 3000);
+                }
             } else if (data.download.status === 'failed') {
-                dlTitle.textContent = 'Download Failed';
-                dlStatus.textContent = `Error details: ${data.download.error}`;
+                dlTitle.textContent = 'Installation Failed';
+                dlStatus.textContent = `Error: ${data.download.error}`;
                 dlBar.style.width = '0%';
-                dlIcon.classList.remove('spin');
-                dlCard.style.borderLeftColor = 'var(--danger)';
+                dlPercent.textContent = '0%';
+                dlIcon.className = 'download-card-icon';
+                dlIcon.setAttribute('data-lucide', 'alert-triangle');
+                dlCloseBtn.classList.remove('hidden');
             }
+            lucide.createIcons();
         } else {
-            dlCard.classList.add('hidden');
+            if (!appState.downloadCompleteTriggered) {
+                dlModal.classList.remove('open');
+            }
         }
         
         // Update Metrics
@@ -264,6 +284,24 @@ function setupControlButtons() {
                 });
         }
     });
+
+    // Auto setup button
+    const autoDownloadBtn = document.getElementById('auto-download-btn');
+    if (autoDownloadBtn) {
+        autoDownloadBtn.addEventListener('click', () => {
+            controlServer('start');
+        });
+    }
+
+    // Download modal close
+    const dlCloseBtn = document.getElementById('download-modal-close-btn');
+    if (dlCloseBtn) {
+        dlCloseBtn.addEventListener('click', async () => {
+            document.getElementById('download-modal').classList.remove('open');
+            await fetch('/api/download/clear', { method: 'POST' });
+            refreshStatus();
+        });
+    }
 
     // Jar upload alert button
     document.getElementById('trigger-jar-upload').addEventListener('click', () => {
