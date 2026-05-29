@@ -101,13 +101,73 @@ async def read_stream(stream, name):
             
         await broadcast_console(decoded_line)
 
+async def download_paper_jar() -> bool:
+    server_jar = os.path.join(state.mc_dir, "server.jar")
+    await broadcast_console("[Sculk Panel] server.jar not found. Fetching latest Paper 1.21.1 build details...")
+    
+    try:
+        loop = asyncio.get_running_loop()
+        
+        def fetch_details():
+            import requests
+            res = requests.get("https://api.papermc.io/v2/projects/paper/versions/1.21.1", timeout=10)
+            res.raise_for_status()
+            return res.json()
+            
+        data = await loop.run_in_executor(None, fetch_details)
+        latest_build = data["builds"][-1]
+        download_url = f"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/{latest_build}/downloads/paper-1.21.1-{latest_build}.jar"
+    except Exception as e:
+        await broadcast_console(f"[Sculk Panel] Failed to fetch build details: {e}. Using fallback Paper build 120.")
+        download_url = "https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/120/downloads/paper-1.21.1-120.jar"
+        
+    await broadcast_console(f"[Sculk Panel] Downloading Paper 1.21.1 jar from: {download_url}")
+    
+    try:
+        def download_file():
+            import requests
+            r = requests.get(download_url, stream=True, timeout=30)
+            r.raise_for_status()
+            total_length = r.headers.get('content-length')
+            
+            last_reported_percent = -1
+            with open(server_jar, "wb") as f:
+                if total_length is None:
+                    f.write(r.content)
+                else:
+                    dl = 0
+                    total_length = int(total_length)
+                    for chunk in r.iter_content(chunk_size=8192):
+                        dl += len(chunk)
+                        f.write(chunk)
+                        percent = int(dl * 100 / total_length)
+                        # Avoid flooding logs, print progress every 10%
+                        if percent % 10 == 0 and percent != last_reported_percent:
+                            last_reported_percent = percent
+                            # We write directly to stdout of console without broadcasting too frequently
+                            # But a quick console print works
+        
+        await loop.run_in_executor(None, download_file)
+        await broadcast_console("[Sculk Panel] Paper 1.21.1 downloaded and saved as server.jar successfully.")
+        return True
+    except Exception as e:
+        await broadcast_console(f"[Sculk Panel ERROR] Failed to download Paper 1.21.1: {e}")
+        if os.path.exists(server_jar):
+            try:
+                os.remove(server_jar)
+            except Exception:
+                pass
+        return False
+
 # Minecraft process lifecycle
 async def run_minecraft_server():
     server_jar = os.path.join(state.mc_dir, "server.jar")
     if not os.path.exists(server_jar):
-        state.status = "stopped"
-        await broadcast_console("[Sculk Panel ERROR] server.jar not found. Please upload a server jar.")
-        return
+        state.status = "starting"
+        success = await download_paper_jar()
+        if not success:
+            state.status = "stopped"
+            return
 
     auto_accept_eula()
     
