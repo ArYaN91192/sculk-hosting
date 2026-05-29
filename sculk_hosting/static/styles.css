@@ -878,3 +878,23 @@ button:disabled {
     padding: 1.25rem 1.5rem;
     border-top: 1px solid var(--border-color);
 }
+
+.autosave-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: opacity var(--transition-fast), color var(--transition-fast);
+    padding: 0.25rem 0;
+}
+
+.autosave-indicator.saving {
+    color: var(--accent);
+}
+
+.autosave-indicator i {
+    width: 0.95rem;
+    height: 0.95rem;
+}

@@ -337,44 +337,69 @@ function setupRamConfigSync() {
     const minText = document.getElementById('min-ram-text');
     const maxSlider = document.getElementById('max-ram-slider');
     const maxText = document.getElementById('max-ram-text');
-    const saveBtn = document.getElementById('save-config-btn');
     
-    // Sync slider -> text
+    // Sync slider -> text & save
     minSlider.addEventListener('input', (e) => {
         minText.value = `${e.target.value}G`;
     });
+    minSlider.addEventListener('change', () => {
+        saveRamConfig();
+    });
+    
     maxSlider.addEventListener('input', (e) => {
         maxText.value = `${e.target.value}G`;
     });
+    maxSlider.addEventListener('change', () => {
+        saveRamConfig();
+    });
     
-    // Sync text -> slider
+    // Sync text -> slider & save
     minText.addEventListener('change', (e) => {
         const val = parseInt(e.target.value) || 1;
         minSlider.value = val;
         e.target.value = `${val}G`;
+        saveRamConfig();
     });
     maxText.addEventListener('change', (e) => {
         const val = parseInt(e.target.value) || 4;
         maxSlider.value = val;
         e.target.value = `${val}G`;
+        saveRamConfig();
     });
+}
+
+async function saveRamConfig() {
+    const minText = document.getElementById('min-ram-text');
+    const maxText = document.getElementById('max-ram-text');
+    const indicator = document.getElementById('ram-autosave-indicator');
     
-    saveBtn.addEventListener('click', async () => {
-        try {
-            const minRam = minText.value;
-            const maxRam = maxText.value;
-            const res = await fetch('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ min_ram: minRam, max_ram: maxRam })
-            });
-            if (res.ok) {
-                alert("JVM RAM configuration saved successfully!");
-            }
-        } catch (err) {
-            console.error("Failed to save RAM config:", err);
+    indicator.classList.add('saving');
+    indicator.querySelector('span').textContent = 'Saving settings...';
+    indicator.querySelector('i').setAttribute('data-lucide', 'refresh-cw');
+    lucide.createIcons();
+    
+    try {
+        const minRam = minText.value;
+        const maxRam = maxText.value;
+        const res = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ min_ram: minRam, max_ram: maxRam })
+        });
+        if (res.ok) {
+            setTimeout(() => {
+                indicator.classList.remove('saving');
+                indicator.querySelector('span').textContent = 'Settings saved automatically';
+                indicator.querySelector('i').setAttribute('data-lucide', 'check');
+                lucide.createIcons();
+            }, 600);
         }
-    });
+    } catch (err) {
+        console.error("Failed to save RAM config:", err);
+        indicator.querySelector('span').textContent = 'Failed to auto-save';
+        indicator.querySelector('i').setAttribute('data-lucide', 'x');
+        lucide.createIcons();
+    }
 }
 
 // 6. File Manager
