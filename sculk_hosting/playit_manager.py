@@ -83,14 +83,17 @@ class PlayitManager:
         self.process.wait()
 
     def _add_log(self, msg: str):
-        self.logs.append(msg)
+        import re
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        clean_msg = ansi_escape.sub('', msg)
+        self.logs.append(clean_msg)
         if len(self.logs) > self.max_logs:
             self.logs.pop(0)
             
         # Fire callbacks
         for callback in self.log_callbacks:
             try:
-                callback(msg)
+                callback(clean_msg)
             except Exception:
                 pass
 
